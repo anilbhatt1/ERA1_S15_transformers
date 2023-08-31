@@ -27,7 +27,7 @@ class FeedForwardBlock(nn.Module):
 class InputEmbeddings(nn.Module):
     def __init__(self, d_model: int, vocab_size: int) -> None:
         super().__init__()
-        super.d_model = d_model
+        self.d_model = d_model
         self.vocab_size = vocab_size
         self.embedding = nn.Embedding(vocab_size, d_model)
     
