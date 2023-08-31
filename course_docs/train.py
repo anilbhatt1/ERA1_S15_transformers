@@ -22,6 +22,7 @@ from tokenizers.pre_tokenizers import Whitespace
 import torchmetrics
 from torch.utils.tensorboard import SummaryWriter
 
+# Part of validation
 def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_len, device):
     sos_idx = tokenizer_tgt.token_to_id("[SOS]")
     eos_idx = tokenizer_tgt.token_to_id("[EOS]")
@@ -52,6 +53,7 @@ def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_
 
     return decoder_input.squeeze(0)
 
+# Part of validation
 def run_validation(model, validation_ds, tokenizer_src, tokenizer_tgt, max_len, device, print_msg, global_step, writer, num_examples=2):
     model.eval()
     count = 0
@@ -112,11 +114,12 @@ def run_validation(model, validation_ds, tokenizer_src, tokenizer_tgt, max_len, 
         writer.add_scalar('validation/bleu', bleu, global_step)
         writer.flush()
 
-
+# part of data module
 def get_all_sentences(ds, lang):
     for item in ds:
         yield item['translation'][lang] 
 
+# part of data module
 def get_or_build_tokenizer(config, ds, lang):
     tokenizer_path = Path(config['tokenizer_file'].format(lang))
     if not Path.exists(tokenizer_path):
@@ -130,6 +133,7 @@ def get_or_build_tokenizer(config, ds, lang):
         tokenizer = Tokenizer.from_file(str(tokenizer_path))
     return tokenizer
 
+# part of data module
 def get_ds(config):
     # Only has train split, so we divide it ourselves
     ds_raw = load_dataset('opus_books', f"{config['lang_src']}-{config['lang_tgt']}", split='train')
@@ -164,10 +168,12 @@ def get_ds(config):
 
     return train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt
 
+# part of pytorch model
 def get_model(config, vocab_src_len, vocab_tgt_len):
     model = build_transformer(vocab_src_len, vocab_tgt_len, config['seq_len'], config['seq_len'], d_model = config['d_model'])
     return model
 
+# part of litmodel
 def train_model(config):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'device : {device}')

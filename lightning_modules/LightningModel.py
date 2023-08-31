@@ -93,13 +93,10 @@ class LitTransformer(LightningModule):
         self.writer.flush() 
             
         # Backpropagate the loss 
-        loss.backward(retain_graph=True) 
-            
+        loss.backward(retain_graph=True)             
          
         return loss
-
-    
-
+   
     def validation_step(self, batch, batch_idx):       
         max_len = self.config['seq_len'] 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
@@ -130,11 +127,8 @@ class LitTransformer(LightningModule):
             print(f"{f'SOURCE: ':>12}{source_text}") 
             print(f"{f'TARGET: ':>12}{target_text}")
             print(f"{f'PREDICTED: ':>12}{model_out_text}")  
-            print('-'*self.console_width)
-            
-
-        
-            
+            print('-'*self.console_width)          
+                  
     def on_validation_epoch_end(self):
         writer = self.writer
         if writer:
@@ -163,9 +157,7 @@ class LitTransformer(LightningModule):
         self.val_predicted = [] 
 
     def test_step(self, batch, batch_idx):
-        pass
-    
-              
+        pass   
         
     def on_train_epoch_end(self):
         # Save the model at the end of every epoch   
@@ -178,8 +170,7 @@ class LitTransformer(LightningModule):
                     'optimizer_state_dict': self.optimizer.state_dict(), 
                     'global_step': self.trainer.global_step}
                    , model_filename) 
-        self.train_losses = []
-            
+        self.train_losses = []            
             
     def greedy_decode(self, model, source, source_mask, tokenizer_src, tokenizer_tgt, max_len, device): 
     
@@ -216,8 +207,7 @@ class LitTransformer(LightningModule):
         return decoder_input.squeeze(0)
     
     def configure_optimizers(self):       
-        return {"optimizer": self.optimizer} # 
-    
+        return {"optimizer": self.optimizer} #     
     
     ####################
     # DATA RELATED HOOKS
@@ -272,10 +262,8 @@ class LitTransformer(LightningModule):
             state = torch.load(model_filename) 
             self.model.load_state_dict(state['model_state_dict'])
             self.trainer.global_step = state['global_step']
-            print("Preloaded")
-            
+            print("Preloaded")          
        
-
         # Keep 90% for training, 10% for validation 
         train_ds_size = int(0.9* len(ds_raw))
         val_ds_size = len(ds_raw) - train_ds_size
@@ -297,21 +285,16 @@ class LitTransformer(LightningModule):
             max_len_tgt = max(max_len_tgt, len(tgt_ids))
 
         print(f'Max length of source sentence: {max_len_src}') 
-        print(f'Max length of target sentence: {max_len_tgt}') 
-    
-
-        
+        print(f'Max length of target sentence: {max_len_tgt}')           
 
     def setup(self, stage=None):
         pass 
        
-
     def train_dataloader(self):
         return DataLoader(self.train_ds, batch_size=self.config['batch_size'], shuffle=True,  num_workers=4, persistent_workers=True, pin_memory=True)
 
     def val_dataloader(self):
         return DataLoader(self.val_ds, batch_size=1, shuffle=False,  num_workers=4, persistent_workers=True, pin_memory=True) 
     
-
     def test_dataloader(self):
         pass
