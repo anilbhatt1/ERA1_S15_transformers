@@ -6,7 +6,7 @@ import numpy
 from dataset import causal_mask
 
 class LightningModel(L.LightningModule):
-    def __init__(self, model, learning_rate, tokenizer_src, tokenizer_tgt, max_len, num_examples):
+    def __init__(self, model, learning_rate, tokenizer_src, tokenizer_tgt, max_len):
         super().__init__()
 
         self.learning_rate = learning_rate
@@ -18,7 +18,6 @@ class LightningModel(L.LightningModule):
         self.source_texts = []
         self.expected = []
         self.predicted = [] 
-        self.num_examples = num_examples   
         self.cer_metric = torchmetrics.text.CharErrorRate()
         self.wer_metric = torchmetrics.text.WordErrorRate()
         self.bleu_metric = torchmetrics.text.BLEUScore()
@@ -40,30 +39,19 @@ class LightningModel(L.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         self.model.eval() 
-        if batch_idx < self.num_examples:
-            encoder_input = batch['encoder_input']
-            encoder_mask = batch['encoder_mask']
+        encoder_input = batch['encoder_input']
+        encoder_mask = batch['encoder_mask']
 
-            assert encoder_input.size(0) == 1, "Batch size must be 1 for validation"
+        assert encoder_input.size(0) == 1, "Batch size must be 1 for validation"
 
-            model_out = self.greedy_decode(encoder_input, encoder_mask)
-            source_text = batch["src_text"][0]
-            target_text = batch["tgt_text"][0]
-            model_out_text = self.tokenizer_tgt.decode(model_out.detach().cpu().numpy())
+        model_out = self.greedy_decode(encoder_input, encoder_mask)
+        source_text = batch["src_text"][0]
+        target_text = batch["tgt_text"][0]
+        model_out_text = self.tokenizer_tgt.decode(model_out.detach().cpu().numpy())
 
-            self.source_texts.append(source_text)
-            self.expected.append(target_text)
-            self.predicted.append(model_out_text)
-
-        if batch_idx >= self.num_examples:
-            cer = self.cer_metric(self.predicted, self.expected)
-            self.log("val_cer", cer, prog_bar=True, on_epoch=True, on_step=True)
-
-            wer = self.wer_metric(self.predicted, self.expected)
-            self.log("val_wer", wer, prog_bar=True, on_epoch=True, on_step=True)   
-
-            bleu = self.bleu_metric(self.predicted, self.expected) 
-            self.log("val_bleu", bleu, prog_bar=True, on_epoch=True, on_step=True)
+        self.source_texts.append(source_text)
+        self.expected.append(target_text)
+        self.predicted.append(model_out_text)
 
     def greedy_decode(self, source, source_mask):
         sos_idx = self.tokenizer_tgt.token_to_id("[SOS]")
@@ -97,6 +85,16 @@ class LightningModel(L.LightningModule):
 
     def test_step(self, batch, batch_idx):
         pass
+
+    def on_validation_epoch_end(self):
+        cer = self.cer_metric(self.predicted, self.expected)
+        self.log("val_cer", cer, prog_bar=True, on_epoch=True)
+
+        wer = self.wer_metric(self.predicted, self.expected)
+        self.log("val_wer", wer, prog_bar=True, on_epoch=True)   
+
+        bleu = self.bleu_metric(self.predicted, self.expected) 
+        self.log("val_bleu", bleu, prog_bar=True, on_epoch=True)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, eps=1e-9)
