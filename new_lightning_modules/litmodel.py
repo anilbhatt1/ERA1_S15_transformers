@@ -19,6 +19,9 @@ class LightningModel(L.LightningModule):
         self.expected = []
         self.predicted = [] 
         self.num_examples = num_examples   
+        self.cer_metric = torchmetrics.text.CharErrorrate()
+        self.wer_metric = torchmetrics.text.WordErrorRate()
+        self.bleu_metric = torchmetrics.text.BLEUScore()
         self.save_hyperparameters(ignore=['model'])   
 
     def training_step(self, batch, batch_idx):
@@ -53,16 +56,13 @@ class LightningModel(L.LightningModule):
             self.predicted.append(model_out_text)
 
         if batch_idx >= self.num_examples:
-            metric = torchmetrics.CharErrorrate()
-            cer = metric(self.predicted, self.expected)
+            cer = self.cer_metric(self.predicted, self.expected)
             self.log("val_cer", cer)
 
-            metric = torchmetrics.WordErrorRate()
-            wer = metric(self.predicted, self.expected)
+            wer = self.wer_metric(self.predicted, self.expected)
             self.log("val_wer", wer)   
 
-            metric = torchmetrics.BLEUScore()
-            bleu = metric(self.predicted, self.expected) 
+            bleu = self.bleu_metric(self.predicted, self.expected) 
             self.log("val_bleu", bleu)
 
     def greedy_decode(self, source, source_mask):
