@@ -34,7 +34,7 @@ class LightningModel(L.LightningModule):
         self.log("train_loss", loss, prog_bar=True, on_epoch=True, on_step=True)
         return loss
 
-    def validation_step(self, batch, batch_idx, num_examples):
+    def validation_step(self, batch, batch_idx):
         self.model.eval() 
         if batch_idx < self.num_examples:
             encoder_input = batch['encoder_input']
