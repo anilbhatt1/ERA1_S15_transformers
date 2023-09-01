@@ -57,13 +57,13 @@ class LightningModel(L.LightningModule):
 
         if batch_idx >= self.num_examples:
             cer = self.cer_metric(self.predicted, self.expected)
-            self.log("val_cer", cer)
+            self.log("val_cer", cer, prog_bar=True, on_epoch=True, on_step=True)
 
             wer = self.wer_metric(self.predicted, self.expected)
-            self.log("val_wer", wer)   
+            self.log("val_wer", wer, prog_bar=True, on_epoch=True, on_step=True)   
 
             bleu = self.bleu_metric(self.predicted, self.expected) 
-            self.log("val_bleu", bleu)
+            self.log("val_bleu", bleu, prog_bar=True, on_epoch=True, on_step=True)
 
     def greedy_decode(self, source, source_mask):
         sos_idx = self.tokenizer_tgt.token_to_id("[SOS]")
