@@ -33,7 +33,7 @@ class OpusbooksDataModule(L.LightningDataModule):
             tokenizer = Tokenizer.from_file(str(tokenizer_path))
         return tokenizer    
     
-    def setup(self):
+    def setup(self, stage):
         # Only has train split, so we divide it ourselves
         ds_raw = load_dataset('opus_books', f"{self.config['lang_src']}-{self.config['lang_tgt']}", split='train')
 
