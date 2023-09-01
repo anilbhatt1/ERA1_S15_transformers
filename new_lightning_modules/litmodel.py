@@ -19,7 +19,7 @@ class LightningModel(L.LightningModule):
         self.expected = []
         self.predicted = [] 
         self.num_examples = num_examples   
-        self.cer_metric = torchmetrics.text.CharErrorrate()
+        self.cer_metric = torchmetrics.text.CharErrorRate()
         self.wer_metric = torchmetrics.text.WordErrorRate()
         self.bleu_metric = torchmetrics.text.BLEUScore()
         self.save_hyperparameters(ignore=['model'])   
