@@ -58,6 +58,7 @@ class OpusbooksDataModule(L.LightningDataModule):
             self.max_len_src = max(self.max_len_src, len(src_ids))
             self.max_len_tgt = max(self.max_len_tgt, len(tgt_ids))
 
+        print(f'train_ds_size : {train_ds_size} & val_ds_size - {val_ds_size}')
         print(f'Max length of source sentence: {self.max_len_src}')
         print(f'Max length of target sentence: {self.max_len_tgt}') 
 
