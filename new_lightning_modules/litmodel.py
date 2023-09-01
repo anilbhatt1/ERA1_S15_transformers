@@ -3,6 +3,7 @@ import torch.nn as nn
 import torchmetrics
 import lightning as L
 import numpy 
+from dataset import causal_mask
 
 class LightningModel(L.LightningModule):
     def __init__(self, model, learning_rate, tokenizer_src, tokenizer_tgt, max_len, num_examples):
@@ -42,7 +43,7 @@ class LightningModel(L.LightningModule):
 
             assert encoder_input.size(0) == 1, "Batch size must be 1 for validation"
 
-            model_out = self.greedy_decode(self.model, encoder_input, encoder_mask, self.tokenizer_src, self.tokenizer_tgt, self.max_len)
+            model_out = self.greedy_decode(encoder_input, encoder_mask)
             source_text = batch["src_text"][0]
             target_text = batch["tgt_text"][0]
             model_out_text = self.tokenizer_tgt.decode(model_out.detach().cpu().numpy())
@@ -63,6 +64,36 @@ class LightningModel(L.LightningModule):
             metric = torchmetrics.BLEUScore()
             bleu = metric(self.predicted, self.expected) 
             self.log("val_bleu", bleu)
+
+    def greedy_decode(self, source, source_mask):
+        sos_idx = self.tokenizer_tgt.token_to_id("[SOS]")
+        eos_idx = self.tokenizer_tgt.token_to_id("[EOS]")
+
+        # Precompute the encoder output and reuse it for every step
+        encoder_output = self.model.encode(source, source_mask)
+        # Initialize the decoder input with the start of sentence token
+        decoder_input = torch.empty(1, 1).fill_(sos_idx).type_as(source)
+
+        while True:
+            if decoder_input.size(1) == self.max_len:
+                break
+            
+            # build mask for target
+            decoder_mask = causal_mask(decoder_input.size(1)).type_as(source_mask)
+
+            # calculate output
+            out = self.model.decode(encoder_output, source_mask, decoder_input, decoder_mask)
+
+            # get next token
+            prob = self.model.project(out[:, -1])
+            _, next_word = torch.max(prob, dim=1)
+            decoder_input = torch.cat(
+                [decoder_input, torch.empty(1,1).type_as(source).fill_(next_word.item())], dim=1)
+            
+            if next_word == eos_idx:
+                break
+
+        return decoder_input.squeeze(0)
 
     def test_step(self, batch, batch_idx):
         pass
